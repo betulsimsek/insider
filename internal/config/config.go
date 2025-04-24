@@ -40,6 +40,7 @@ type RedisConfig struct {
 
 type WebhookConfig struct {
 	WebhookURL string `env:"WEBHOOK_URL,required"`
+	AuthKey    string `env:"AUTH_KEY,required"`
 }
 
 func ReadEnvironment(ctx context.Context, envParam any) *App {
