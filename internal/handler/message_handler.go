@@ -111,12 +111,17 @@ func (h *MessageHandler) GetSentMessages(c *gin.Context) {
 // @Tags messages
 // @Accept json
 // @Produce json
-// @Param message body model.Message true "Message payload"
+// @Param message body model.SendMessageRequest true "Message payload"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Router /api/messages/send [post]
 func (h *MessageHandler) SendMessage(c *gin.Context) {
-	var message model.Message
+	var req model.SendMessageRequest
+	message := model.Message{
+		ID:             req.ID,
+		Content:        req.Content,
+		RecipientPhone: req.RecipientPhone,
+	}
 
 	// Bind the JSON payload to the message struct
 	if err := c.ShouldBindJSON(&message); err != nil {

@@ -15,3 +15,9 @@ type Message struct {
 	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
+
+type SendMessageRequest struct {
+	ID             uint   `json:"id" example:"5"`
+	Content        string `json:"content" example:"Insider - Project"`
+	RecipientPhone string `json:"recipient_phone" example:"+905551111111"`
+}

@@ -18,6 +18,18 @@ definitions:
       updated_at:
         type: string
     type: object
+  model.SendMessageRequest:
+    properties:
+      content:
+        example: Insider - Project
+        type: string
+      id:
+        example: 5
+        type: integer
+      recipient_phone:
+        example: "+905551111111"
+        type: string
+    type: object
 host: localhost:8080
 info:
   contact:
@@ -43,7 +55,7 @@ paths:
         name: message
         required: true
         schema:
-          $ref: '#/definitions/model.Message'
+          $ref: '#/definitions/model.SendMessageRequest'
       produces:
       - application/json
       responses:

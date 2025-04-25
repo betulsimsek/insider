@@ -44,7 +44,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Message"
+                            "$ref": "#/definitions/model.SendMessageRequest"
                         }
                     }
                 ],
@@ -166,6 +166,23 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                }
+            }
+        },
+        "model.SendMessageRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Insider - Project"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 5
+                },
+                "recipient_phone": {
+                    "type": "string",
+                    "example": "+905551111111"
                 }
             }
         }
