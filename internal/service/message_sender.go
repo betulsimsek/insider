@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"insider/internal/config"
-	"insider/internal/model"
-	"insider/internal/mpostgres"
+	"message-service/internal/config"
+	"message-service/internal/model"
+	"message-service/internal/mpostgres"
 
 	"github.com/useinsider/go-pkg/inslogger"
 	"github.com/useinsider/go-pkg/insredis"
@@ -105,6 +105,11 @@ func (s *messageSender) SendMessage(message model.Message) error {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		s.logger.Warnf("Rate limit hit. Retrying... Headers: %v", resp.Header)
+		return fmt.Errorf("failed to send request: %w", err)
+	}
 
 	// Check for valid response status codes (202 Accepted or 200 OK)
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {

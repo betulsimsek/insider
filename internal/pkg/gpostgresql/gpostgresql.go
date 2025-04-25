@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"insider/internal/config"
+	"message-service/internal/config"
 
 	"github.com/useinsider/go-pkg/inslogger"
 

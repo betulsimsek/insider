@@ -12,17 +12,17 @@ import (
 	"github.com/useinsider/go-pkg/inslogger"
 	"github.com/useinsider/go-pkg/insredis"
 
-	_ "insider/docs"
-	"insider/internal/config"
-	"insider/internal/handler"
-	"insider/internal/mpostgres"
-	"insider/internal/pkg/gpostgresql"
-	"insider/internal/service"
+	_ "message-service/docs"
+	"message-service/internal/config"
+	"message-service/internal/handler"
+	"message-service/internal/mpostgres"
+	"message-service/internal/pkg/gpostgresql"
+	"message-service/internal/service"
 )
 
-// @title Insider API
+// @title message-service API
 // @version 1.0
-// @description This is the API documentation for the Insider project.
+// @description This is the API documentation for the message-service project.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support

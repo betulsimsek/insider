@@ -2,7 +2,7 @@ package mpostgres
 
 import (
 	"context"
-	"insider/internal/model"
+	"message-service/internal/model"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"

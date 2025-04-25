@@ -174,7 +174,7 @@ const docTemplate = `{
             "properties": {
                 "content": {
                     "type": "string",
-                    "example": "Insider - Project"
+                    "example": "message-service - Project"
                 },
                 "id": {
                     "type": "integer",
@@ -195,8 +195,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8080",
 	BasePath:         "/",
 	Schemes:          []string{"http"},
-	Title:            "Insider API",
-	Description:      "This is the API documentation for the Insider project.",
+	Title:            "message-service API",
+	Description:      "This is the API documentation for the message-service project.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

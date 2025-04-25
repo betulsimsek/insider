@@ -1,10 +1,10 @@
-# Insider
+# message-service
 
 A microservice for message scheduling and delivery with a RESTful API interface.
 
 ## Overview
 
-Insider is a Go-based backend service that provides functionality to send messages, manage a scheduler for automated message delivery, and track sent messages. The application exposes a RESTful API with Swagger documentation.
+message-service is a Go-based backend service that provides functionality to send messages, manage a scheduler for automated message delivery, and track sent messages. The application exposes a RESTful API with Swagger documentation.
 
 ## Features
 
@@ -58,8 +58,8 @@ Copy `env.example` to `.env` and configure the required settings.
 
 ### Installation & Running with Docker
 docker compose down -v
-docker compose up --build
 
+docker compose up --build
 
 ## Dependencies
 
@@ -72,7 +72,3 @@ Major dependencies include:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-For support or inquiries, contact support@useinsider.com
