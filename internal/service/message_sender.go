@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"insider/internal/config"
 	"insider/internal/model"
 	"insider/internal/mpostgres"
+
+	"github.com/useinsider/go-pkg/insredis"
 )
 
 type MessagePayload struct {
@@ -30,13 +33,15 @@ type MessageSender interface {
 
 type messageSender struct {
 	messageService mpostgres.MessageService
+	redisClient    insredis.RedisInterface
 	webhookURL     string
 	authKey        string
 }
 
-func NewMessageSender(service mpostgres.MessageService, config *config.App) MessageSender {
+func NewMessageSender(service mpostgres.MessageService, redisClient insredis.RedisInterface, config *config.App) MessageSender {
 	return &messageSender{
 		messageService: service,
+		redisClient:    redisClient,
 		webhookURL:     config.WebhookURL,
 		authKey:        config.AuthKey,
 	}
@@ -60,7 +65,6 @@ func (s *messageSender) SendMessages(count int) error {
 			log.Printf("Failed to update message %d status: %v", message.ID, err)
 		}
 	}
-
 	return nil
 }
 
@@ -90,7 +94,7 @@ func (s *messageSender) SendMessage(message model.Message) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	// Accept both 200 OK and 202 Accepted as valid responses ==>> configured in webhook.site
+	// Accept both 200 OK and 202 Accepted as valid responses
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -98,6 +102,16 @@ func (s *messageSender) SendMessage(message model.Message) (string, error) {
 	var response MessageResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	// After successfully sending the message and getting the messageID, cache it
+	if s.redisClient != nil {
+		// Cache message ID with timestamp as value
+		cacheKey := fmt.Sprintf("message:%s", response.MessageID)
+		timestamp := time.Now().Format(time.RFC3339)
+		if err := s.redisClient.Set(cacheKey, timestamp, 24*time.Hour).Err(); err != nil {
+			log.Printf("Failed to cache message ID: %v", err)
+		}
 	}
 
 	return response.MessageID, nil
