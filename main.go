@@ -34,6 +34,8 @@ import (
 
 // @host localhost:8080
 // @BasePath /
+
+// @schemes http
 func main() {
 	logger := inslogger.NewLogger(inslogger.Debug)
 	logger.Log("Starting the application...")

@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+// Message represents a message entity.
+// @Description Message entity
 type Message struct {
 	ID             uint      `gorm:"primaryKey" json:"id"`
 	Content        string    `gorm:"type:text;not null" json:"content"`

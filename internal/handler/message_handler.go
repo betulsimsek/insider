@@ -33,14 +33,14 @@ func NewMessageHandler(
 	}
 }
 
-// StartScheduler godoc
+// StartScheduler starts the message scheduler.
 // @Summary Start the message scheduler
 // @Description Start the automatic message sending process
 // @Tags scheduler
 // @Accept json
 // @Produce json
 // @Success 200 {object} map[string]interface{}
-// @Router /scheduler/start [post]
+// @Router /api/scheduler/start [post]
 func (h *MessageHandler) StartScheduler(c *gin.Context) {
 	if err := h.scheduler.Start(); err != nil {
 		h.logger.Error(err)
@@ -56,14 +56,14 @@ func (h *MessageHandler) StartScheduler(c *gin.Context) {
 	})
 }
 
-// StopScheduler godoc
+// StopScheduler stops the message scheduler.
 // @Summary Stop the message scheduler
 // @Description Stop the automatic message sending process
 // @Tags scheduler
 // @Accept json
 // @Produce json
 // @Success 200 {object} map[string]interface{}
-// @Router /scheduler/stop [post]
+// @Router /api/scheduler/stop [post]
 func (h *MessageHandler) StopScheduler(c *gin.Context) {
 	if err := h.scheduler.Stop(); err != nil {
 		h.logger.Error(err)
@@ -79,14 +79,14 @@ func (h *MessageHandler) StopScheduler(c *gin.Context) {
 	})
 }
 
-// GetSentMessages godoc
+// GetSentMessages retrieves all sent messages.
 // @Summary Get all sent messages
 // @Description Retrieve a list of all sent messages
 // @Tags messages
 // @Accept json
 // @Produce json
 // @Success 200 {array} model.Message
-// @Router /messages/sent [get]
+// @Router /api/messages/sent [get]
 func (h *MessageHandler) GetSentMessages(c *gin.Context) {
 	messages, err := h.messageService.GetSentMessages(c.Request.Context())
 	if err != nil {
@@ -105,15 +105,16 @@ func (h *MessageHandler) GetSentMessages(c *gin.Context) {
 	c.JSON(http.StatusOK, messages)
 }
 
-// SendMessage godoc
+// SendMessage handles sending a message.
 // @Summary Send a message
 // @Description Send a message to a recipient
 // @Tags messages
 // @Accept json
 // @Produce json
-// @Param message body model.Message true "Message to send"
-// @Success 200 {object} model.MessageResponse
-// @Router /messages/send [post]
+// @Param message body model.Message true "Message payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/messages/send [post]
 func (h *MessageHandler) SendMessage(c *gin.Context) {
 	var message model.Message
 
