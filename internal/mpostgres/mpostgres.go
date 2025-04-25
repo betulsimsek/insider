@@ -6,21 +6,24 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/useinsider/go-pkg/inslogger"
 )
 
 type MessageService interface {
 	GetUnsentMessages(ctx context.Context, limit int) ([]model.Message, error)
-	UpdateMessageSent(ctx context.Context, id uint, messageID string) error
+	UpdateMessageSent(ctx context.Context, id uint) error
 	GetSentMessages(ctx context.Context) ([]model.Message, error)
 }
 
 type message struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	logger inslogger.Interface
 }
 
-func NewMessageService(pool *pgxpool.Pool) MessageService {
+func NewMessageService(pool *pgxpool.Pool, logger inslogger.Interface) MessageService {
 	return &message{
-		pool: pool,
+		pool:   pool,
+		logger: logger,
 	}
 }
 
@@ -28,7 +31,7 @@ func (r *message) GetUnsentMessages(ctx context.Context, limit int) ([]model.Mes
 	var messages []model.Message
 
 	query := `
-		SELECT id, content, recipient_phone, sent, sent_at, message_id, created_at, updated_at 
+		SELECT id, content, recipient_phone, sent, sent_at, created_at, updated_at 
 		FROM messages 
 		WHERE sent = $1 
 		LIMIT $2
@@ -49,7 +52,6 @@ func (r *message) GetUnsentMessages(ctx context.Context, limit int) ([]model.Mes
 			&msg.RecipientPhone,
 			&msg.Sent,
 			&sentAt,
-			&msg.MessageID,
 			&createdAt,
 			&updatedAt,
 		)
@@ -77,23 +79,29 @@ func (r *message) GetUnsentMessages(ctx context.Context, limit int) ([]model.Mes
 	return messages, nil
 }
 
-func (r *message) UpdateMessageSent(ctx context.Context, id uint, messageID string) error {
+func (r *message) UpdateMessageSent(ctx context.Context, id uint) error {
 	now := time.Now()
 	query := `
-		UPDATE messages 
-		SET sent = $1, sent_at = $2, message_id = $3, updated_at = $4 
-		WHERE id = $5
-	`
+        UPDATE messages 
+        SET sent = $1, sent_at = $2, updated_at = $3 
+        WHERE id = $4
+    `
 
-	_, err := r.pool.Exec(ctx, query, true, now, messageID, now, id)
-	return err
+	_, err := r.pool.Exec(ctx, query, true, now, now, id)
+	if err != nil {
+		r.logger.Errorf("Failed to update message with ID %d: %v", id, err)
+		return err
+	}
+
+	r.logger.Logf("Message with ID %d updated successfully", id)
+	return nil
 }
 
 func (r *message) GetSentMessages(ctx context.Context) ([]model.Message, error) {
 	var messages []model.Message
 
 	query := `
-		SELECT id, content, recipient_phone, sent, sent_at, message_id, created_at, updated_at 
+		SELECT id, content, recipient_phone, sent, sent_at, created_at, updated_at 
 		FROM messages 
 		WHERE sent = $1
 	`
@@ -113,7 +121,6 @@ func (r *message) GetSentMessages(ctx context.Context) ([]model.Message, error) 
 			&msg.RecipientPhone,
 			&msg.Sent,
 			&sentAt,
-			&msg.MessageID,
 			&createdAt,
 			&updatedAt,
 		)
