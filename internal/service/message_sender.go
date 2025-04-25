@@ -28,7 +28,7 @@ type MessageResponse struct {
 
 type MessageSender interface {
 	SendMessages(int) error
-	SendMessage(message model.Message) (string, error)
+	SendMessage(message model.Message) error
 }
 
 type messageSender struct {
@@ -50,29 +50,37 @@ func NewMessageSender(service mpostgres.MessageService, redisClient insredis.Red
 }
 
 func (s *messageSender) SendMessages(count int) error {
+	s.logger.Log("Fetching unsent messages...")
 	ctx := context.Background()
-	s.logger.Logf("Sending %d messages...", count)
+	s.logger.Log("Fetching unsent messages...")
 	messages, err := s.messageService.GetUnsentMessages(ctx, count)
 	if err != nil {
-		return fmt.Errorf("failed to get unsent messages: %w", err)
+		s.logger.Log(fmt.Errorf("failed to get unsent messages: %v", err))
+		return err
+	}
+	s.logger.Logf("Fetched %d unsent messages", len(messages))
+
+	if len(messages) == 0 {
+		s.logger.Log("No unsent messages found.")
+		return nil
 	}
 
 	for _, message := range messages {
-
-		messageID, err := s.SendMessage(message)
+		s.logger.Log(fmt.Sprintf("Sending message ID: %d", message.ID))
+		err := s.SendMessage(message)
 		if err != nil {
-			s.logger.Warnf("Failed to send message %d: %v", message.ID, err)
+			s.logger.Log(fmt.Errorf("failed to send message ID %d: %v", message.ID, err))
 			continue
 		}
 
-		if err := s.messageService.UpdateMessageSent(ctx, message.ID, messageID); err != nil {
-			s.logger.Warnf("Failed to update message %d status: %v", message.ID, err)
+		if err := s.messageService.UpdateMessageSent(ctx, message.ID); err != nil {
+			s.logger.Log(fmt.Errorf("failed to update message ID %d status: %v", message.ID, err))
 		}
 	}
+
 	return nil
 }
-
-func (s *messageSender) SendMessage(message model.Message) (string, error) {
+func (s *messageSender) SendMessage(message model.Message) error {
 	payload := MessagePayload{
 		To:      message.RecipientPhone,
 		Content: message.Content,
@@ -80,12 +88,12 @@ func (s *messageSender) SendMessage(message model.Message) (string, error) {
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal payload: %w", err)
+		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", s.webhookURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -94,29 +102,38 @@ func (s *messageSender) SendMessage(message model.Message) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
+		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Accept both 200 OK and 202 Accepted as valid responses
+	// Check for valid response status codes (202 Accepted or 200 OK)
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var response MessageResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
+		return fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// After successfully sending the message and getting the messageID, cache it
+	s.logger.Logf("Message sent successfully: %v", message.ID)
+
+	// Cache the message ID in Redis (if Redis is enabled)
 	if s.redisClient != nil {
-		// Cache message ID with timestamp as value
-		cacheKey := fmt.Sprintf("message:%s", response.MessageID)
+		messageId := fmt.Sprintf("%v", message.ID)
+		cacheKey := fmt.Sprintf("message:%s", messageId)
 		timestamp := time.Now().Format(time.RFC3339)
+
+		s.logger.Logf("Caching message ID: %s with timestamp: %s", messageId, timestamp)
+
 		if err := s.redisClient.Set(cacheKey, timestamp, 24*time.Hour).Err(); err != nil {
-			s.logger.Warnf("Failed to cache message ID: %v", err)
+			s.logger.Warnf("Failed to cache message ID: %s, error: %v", messageId, err)
+		} else {
+			s.logger.Logf("Cached message ID: %s with timestamp: %s", messageId, timestamp)
 		}
+	} else {
+		s.logger.Warn("Redis client is nil. Skipping caching.")
 	}
 
-	return response.MessageID, nil
+	return nil
 }

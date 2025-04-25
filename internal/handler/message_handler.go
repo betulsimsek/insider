@@ -15,12 +15,20 @@ type MessageHandler struct {
 	messageService mpostgres.MessageService
 	scheduler      service.SchedulerService
 	logger         inslogger.Interface
+	messageSender  service.MessageSender
 }
 
-func NewMessageHandler(messageService mpostgres.MessageService, scheduler service.SchedulerService, logger inslogger.Interface) *MessageHandler {
+func NewMessageHandler(
+	messageService mpostgres.MessageService,
+	scheduler service.SchedulerService,
+	messageSender service.MessageSender,
+	logger inslogger.Interface,
+) *MessageHandler {
+
 	return &MessageHandler{
 		messageService: messageService,
 		scheduler:      scheduler,
+		messageSender:  messageSender,
 		logger:         logger,
 	}
 }
@@ -95,4 +103,42 @@ func (h *MessageHandler) GetSentMessages(c *gin.Context) {
 	}
 	h.logger.Logf("Retrieved %d sent messages", len(messages))
 	c.JSON(http.StatusOK, messages)
+}
+
+// SendMessage godoc
+// @Summary Send a message
+// @Description Send a message to a recipient
+// @Tags messages
+// @Accept json
+// @Produce json
+// @Param message body model.Message true "Message to send"
+// @Success 200 {object} model.MessageResponse
+// @Router /messages/send [post]
+func (h *MessageHandler) SendMessage(c *gin.Context) {
+	var message model.Message
+
+	// Bind the JSON payload to the message struct
+	if err := c.ShouldBindJSON(&message); err != nil {
+		h.logger.Errorf("Invalid request payload: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	err := h.messageSender.SendMessage(message)
+	if err != nil {
+		h.logger.Errorf("Failed to send message: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to send message"})
+		return
+	}
+
+	if err := h.messageService.UpdateMessageSent(c.Request.Context(), message.ID); err != nil {
+		h.logger.Logf("Failed to update message status: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update message status"})
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message":   "Accepted",
+		"messageId": message.ID,
+	})
 }
