@@ -1,9 +1,11 @@
 package service
 
 import (
-	"log"
+	"fmt"
 	"sync"
 	"time"
+
+	"github.com/useinsider/go-pkg/inslogger"
 )
 
 type SchedulerService interface {
@@ -13,6 +15,7 @@ type SchedulerService interface {
 }
 
 type schedulerService struct {
+	logger       inslogger.Interface
 	sender       MessageSender
 	interval     time.Duration
 	batchSize    int
@@ -22,8 +25,9 @@ type schedulerService struct {
 	runningMutex sync.Mutex
 }
 
-func NewSchedulerService(sender MessageSender, interval time.Duration, batchSize int) SchedulerService {
+func NewSchedulerService(sender MessageSender, interval time.Duration, batchSize int, logger inslogger.Interface) SchedulerService {
 	return &schedulerService{
+		logger:    logger,
 		sender:    sender,
 		interval:  interval,
 		batchSize: batchSize,
@@ -32,27 +36,41 @@ func NewSchedulerService(sender MessageSender, interval time.Duration, batchSize
 }
 
 func (s *schedulerService) Start() error {
+	s.logger.Log("Starting scheduler...")
+
 	s.runningMutex.Lock()
 	defer s.runningMutex.Unlock()
 
 	if s.isRunning {
-		return nil
+		return fmt.Errorf("scheduler is already running")
+	}
+
+	// Debugging logs
+	if s.sender == nil {
+		s.logger.Log("Error: sender is nil")
+		return fmt.Errorf("sender is nil")
+	}
+	if s.stopChan == nil {
+		s.logger.Log("Error: stopChan is nil")
+		return fmt.Errorf("stopChan is nil")
 	}
 
 	s.ticker = time.NewTicker(s.interval)
 	s.isRunning = true
 
+	// Trigger the first batch immediately
 	go func() {
-		// Send messages immediately on start
+		s.logger.Log("Executing first batch immediately...")
 		if err := s.sender.SendMessages(s.batchSize); err != nil {
-			log.Printf("Error sending initial messages: %v", err)
+			s.logger.Log(fmt.Errorf("error sending scheduled messages: %v", err))
 		}
 
+		// Start the ticker for subsequent intervals
 		for {
 			select {
 			case <-s.ticker.C:
 				if err := s.sender.SendMessages(s.batchSize); err != nil {
-					log.Printf("Error sending scheduled messages: %v", err)
+					s.logger.Log(fmt.Errorf("error sending scheduled messages: %v", err))
 				}
 			case <-s.stopChan:
 				s.ticker.Stop()

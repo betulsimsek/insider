@@ -1,0 +1,126 @@
+basePath: /
+definitions:
+  model.Message:
+    description: Message entity
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      recipient_phone:
+        type: string
+      sent:
+        type: boolean
+      sent_at:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.SendMessageRequest:
+    properties:
+      content:
+        example: Insider - Project
+        type: string
+      id:
+        example: 5
+        type: integer
+      recipient_phone:
+        example: "+905551111111"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is the API documentation for the Insider project.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Insider API
+  version: "1.0"
+paths:
+  /api/messages/send:
+    post:
+      consumes:
+      - application/json
+      description: Send a message to a recipient
+      parameters:
+      - description: Message payload
+        in: body
+        name: message
+        required: true
+        schema:
+          $ref: '#/definitions/model.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Send a message
+      tags:
+      - messages
+  /api/messages/sent:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of all sent messages
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Message'
+            type: array
+      summary: Get all sent messages
+      tags:
+      - messages
+  /api/scheduler/start:
+    post:
+      consumes:
+      - application/json
+      description: Start the automatic message sending process
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Start the message scheduler
+      tags:
+      - scheduler
+  /api/scheduler/stop:
+    post:
+      consumes:
+      - application/json
+      description: Stop the automatic message sending process
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Stop the message scheduler
+      tags:
+      - scheduler
+schemes:
+- http
+swagger: "2.0"

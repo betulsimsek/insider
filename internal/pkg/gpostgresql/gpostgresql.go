@@ -3,11 +3,12 @@ package gpostgresql
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"insider/internal/config"
+
+	"github.com/useinsider/go-pkg/inslogger"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -19,7 +20,7 @@ type ExecQueryRower interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-func NewDBConnection(ctx context.Context, dbConfig *config.DatabaseConfig) (*pgxpool.Pool, error) {
+func NewDBConnection(ctx context.Context, dbConfig *config.DatabaseConfig, logger inslogger.Interface) (*pgxpool.Pool, error) {
 	var db *pgxpool.Pool
 
 	connString := strings.TrimSpace(fmt.Sprintf(
@@ -33,7 +34,7 @@ func NewDBConnection(ctx context.Context, dbConfig *config.DatabaseConfig) (*pgx
 
 	parseConfig, err := pgxpool.ParseConfig(connString)
 	if err != nil {
-		log.Printf("Error parsing pool parseConfig: %v", err)
+		logger.Errorf("Error parsing pool parseConfig: %v", err)
 		return nil, err
 	}
 
@@ -45,16 +46,17 @@ func NewDBConnection(ctx context.Context, dbConfig *config.DatabaseConfig) (*pgx
 
 	db, err = pgxpool.NewWithConfig(ctx, parseConfig)
 	if err != nil {
-		log.Printf("Error connecting to database: %v", err)
+		logger.Errorf("error connecting to database: %v", err)
 		return nil, err
 	}
 
-	log.Println("Connected to postgresql")
+	logger.Log("connected to PostgreSQL")
 	return db, nil
 }
 
-func Close(ctx context.Context, pool *pgxpool.Pool) {
+func Close(ctx context.Context, pool *pgxpool.Pool, logger inslogger.Interface) {
 	if pool != nil {
+		logger.Log("Closing PostgreSQL connection pool")
 		pool.Close()
 	}
 }
