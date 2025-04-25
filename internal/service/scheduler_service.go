@@ -1,9 +1,11 @@
 package service
 
 import (
-	"log"
+	"fmt"
 	"sync"
 	"time"
+
+	"github.com/useinsider/go-pkg/inslogger"
 )
 
 type SchedulerService interface {
@@ -13,6 +15,7 @@ type SchedulerService interface {
 }
 
 type schedulerService struct {
+	logger       inslogger.Interface
 	sender       MessageSender
 	interval     time.Duration
 	batchSize    int
@@ -32,6 +35,7 @@ func NewSchedulerService(sender MessageSender, interval time.Duration, batchSize
 }
 
 func (s *schedulerService) Start() error {
+	s.logger.Log("Starting scheduler...")
 	s.runningMutex.Lock()
 	defer s.runningMutex.Unlock()
 
@@ -45,14 +49,14 @@ func (s *schedulerService) Start() error {
 	go func() {
 		// Send messages immediately on start
 		if err := s.sender.SendMessages(s.batchSize); err != nil {
-			log.Printf("Error sending initial messages: %v", err)
+			s.logger.Log(fmt.Errorf("error sending initial messages: %v", err))
 		}
 
 		for {
 			select {
 			case <-s.ticker.C:
 				if err := s.sender.SendMessages(s.batchSize); err != nil {
-					log.Printf("Error sending scheduled messages: %v", err)
+					s.logger.Log(fmt.Errorf("error sending scheduled messages: %v", err))
 				}
 			case <-s.stopChan:
 				s.ticker.Stop()

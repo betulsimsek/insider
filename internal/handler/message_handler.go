@@ -1,8 +1,6 @@
-// internal/handler/message_handler.go
 package handler
 
 import (
-	"log"
 	"net/http"
 
 	"insider/internal/model"
@@ -10,17 +8,20 @@ import (
 	"insider/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/useinsider/go-pkg/inslogger"
 )
 
 type MessageHandler struct {
 	messageService mpostgres.MessageService
 	scheduler      service.SchedulerService
+	logger         inslogger.Interface
 }
 
-func NewMessageHandler(messageService mpostgres.MessageService, scheduler service.SchedulerService) *MessageHandler {
+func NewMessageHandler(messageService mpostgres.MessageService, scheduler service.SchedulerService, logger inslogger.Interface) *MessageHandler {
 	return &MessageHandler{
 		messageService: messageService,
 		scheduler:      scheduler,
+		logger:         logger,
 	}
 }
 
@@ -34,6 +35,7 @@ func NewMessageHandler(messageService mpostgres.MessageService, scheduler servic
 // @Router /scheduler/start [post]
 func (h *MessageHandler) StartScheduler(c *gin.Context) {
 	if err := h.scheduler.Start(); err != nil {
+		h.logger.Error(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to start scheduler",
 		})
@@ -56,6 +58,7 @@ func (h *MessageHandler) StartScheduler(c *gin.Context) {
 // @Router /scheduler/stop [post]
 func (h *MessageHandler) StopScheduler(c *gin.Context) {
 	if err := h.scheduler.Stop(); err != nil {
+		h.logger.Error(err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to stop scheduler",
 		})
@@ -79,16 +82,17 @@ func (h *MessageHandler) StopScheduler(c *gin.Context) {
 func (h *MessageHandler) GetSentMessages(c *gin.Context) {
 	messages, err := h.messageService.GetSentMessages(c.Request.Context())
 	if err != nil {
-		log.Printf("Error retrieving sent messages: %v", err)
+		h.logger.Errorf("error retrieving sent messages: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve sent messages", "details": err.Error()})
 		return
 	}
 
 	// Return an empty array if no messages are found
 	if len(messages) == 0 {
+		h.logger.Log("No sent messages found")
 		c.JSON(http.StatusOK, []model.Message{})
 		return
 	}
-
+	h.logger.Logf("Retrieved %d sent messages", len(messages))
 	c.JSON(http.StatusOK, messages)
 }

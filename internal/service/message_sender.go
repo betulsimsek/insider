@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"insider/internal/model"
 	"insider/internal/mpostgres"
 
+	"github.com/useinsider/go-pkg/inslogger"
 	"github.com/useinsider/go-pkg/insredis"
 )
 
@@ -32,14 +32,16 @@ type MessageSender interface {
 }
 
 type messageSender struct {
+	logger         inslogger.Interface
 	messageService mpostgres.MessageService
 	redisClient    insredis.RedisInterface
 	webhookURL     string
 	authKey        string
 }
 
-func NewMessageSender(service mpostgres.MessageService, redisClient insredis.RedisInterface, config *config.App) MessageSender {
+func NewMessageSender(service mpostgres.MessageService, redisClient insredis.RedisInterface, config *config.App, logger inslogger.Interface) MessageSender {
 	return &messageSender{
+		logger:         logger,
 		messageService: service,
 		redisClient:    redisClient,
 		webhookURL:     config.WebhookURL,
@@ -49,20 +51,22 @@ func NewMessageSender(service mpostgres.MessageService, redisClient insredis.Red
 
 func (s *messageSender) SendMessages(count int) error {
 	ctx := context.Background()
+	s.logger.Logf("Sending %d messages...", count)
 	messages, err := s.messageService.GetUnsentMessages(ctx, count)
 	if err != nil {
 		return fmt.Errorf("failed to get unsent messages: %w", err)
 	}
 
 	for _, message := range messages {
+
 		messageID, err := s.SendMessage(message)
 		if err != nil {
-			log.Printf("Failed to send message %d: %v", message.ID, err)
+			s.logger.Warnf("Failed to send message %d: %v", message.ID, err)
 			continue
 		}
 
 		if err := s.messageService.UpdateMessageSent(ctx, message.ID, messageID); err != nil {
-			log.Printf("Failed to update message %d status: %v", message.ID, err)
+			s.logger.Warnf("Failed to update message %d status: %v", message.ID, err)
 		}
 	}
 	return nil
@@ -110,7 +114,7 @@ func (s *messageSender) SendMessage(message model.Message) (string, error) {
 		cacheKey := fmt.Sprintf("message:%s", response.MessageID)
 		timestamp := time.Now().Format(time.RFC3339)
 		if err := s.redisClient.Set(cacheKey, timestamp, 24*time.Hour).Err(); err != nil {
-			log.Printf("Failed to cache message ID: %v", err)
+			s.logger.Warnf("Failed to cache message ID: %v", err)
 		}
 	}
 

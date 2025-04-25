@@ -2,10 +2,11 @@ package config
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	"github.com/joho/godotenv"
 	"github.com/sethvargo/go-envconfig"
+	"github.com/useinsider/go-pkg/inslogger"
 )
 
 var AppEnv App
@@ -43,12 +44,12 @@ type WebhookConfig struct {
 	AuthKey    string `env:"AUTH_KEY,required"`
 }
 
-func ReadEnvironment(ctx context.Context, envParam any) *App {
+func ReadEnvironment(ctx context.Context, envParam any, logger inslogger.Interface) *App {
 	_ = godotenv.Load()
 	var config App
 	err := envconfig.Process(ctx, &config)
 	if err != nil {
-		log.Fatalf("Error processing environment variables: %v", err)
+		logger.Fatal(fmt.Errorf("error processing environment variables: %v", err))
 	}
 
 	return &config
