@@ -58,8 +58,8 @@ Copy `env.example` to `.env` and configure the required settings.
 
 ### Installation & Running with Docker
 docker compose down -v
-docker compose up --build
 
+docker compose up --build
 
 ## Dependencies
 

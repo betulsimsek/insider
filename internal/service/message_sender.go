@@ -106,6 +106,11 @@ func (s *messageSender) SendMessage(message model.Message) error {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusTooManyRequests {
+		s.logger.Warnf("Rate limit hit. Retrying... Headers: %v", resp.Header)
+		return fmt.Errorf("failed to send request: %w", err)
+	}
+
 	// Check for valid response status codes (202 Accepted or 200 OK)
 	if resp.StatusCode != http.StatusAccepted && resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
