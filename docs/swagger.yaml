@@ -21,7 +21,7 @@ definitions:
   model.SendMessageRequest:
     properties:
       content:
-        example: Insider - Project
+        example: message-service - Project
         type: string
       id:
         example: 5
@@ -36,12 +36,12 @@ info:
     email: support@swagger.io
     name: API Support
     url: http://www.swagger.io/support
-  description: This is the API documentation for the Insider project.
+  description: This is the API documentation for the message-service project.
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
   termsOfService: http://swagger.io/terms/
-  title: Insider API
+  title: message-service API
   version: "1.0"
 paths:
   /api/messages/send:

@@ -4,8 +4,8 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "This is the API documentation for the Insider project.",
-        "title": "Insider API",
+        "description": "This is the API documentation for the message-service project.",
+        "title": "message-service API",
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "API Support",
@@ -171,7 +171,7 @@
             "properties": {
                 "content": {
                     "type": "string",
-                    "example": "Insider - Project"
+                    "example": "message-service - Project"
                 },
                 "id": {
                     "type": "integer",

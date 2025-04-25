@@ -18,6 +18,6 @@ type Message struct {
 
 type SendMessageRequest struct {
 	ID             uint   `json:"id" example:"5"`
-	Content        string `json:"content" example:"Insider - Project"`
+	Content        string `json:"content" example:"message-service - Project"`
 	RecipientPhone string `json:"recipient_phone" example:"+905551111111"`
 }

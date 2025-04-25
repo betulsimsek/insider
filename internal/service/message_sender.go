@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"insider/internal/config"
-	"insider/internal/model"
-	"insider/internal/mpostgres"
+	"message-service/internal/config"
+	"message-service/internal/model"
+	"message-service/internal/mpostgres"
 
 	"github.com/useinsider/go-pkg/inslogger"
 	"github.com/useinsider/go-pkg/insredis"

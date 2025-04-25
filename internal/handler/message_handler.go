@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"insider/internal/model"
-	"insider/internal/mpostgres"
-	"insider/internal/service"
+	"message-service/internal/model"
+	"message-service/internal/mpostgres"
+	"message-service/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/useinsider/go-pkg/inslogger"
