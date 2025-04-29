@@ -74,7 +74,7 @@ func main() {
 	schedulerService := service.NewSchedulerService(messageSender, 2*time.Minute, 2, logger)
 
 	logger.Log("Creating message handler...")
-	messageHandler := handler.NewMessageHandler(messageService, schedulerService, messageSender, logger)
+	messageHandler := handler.NewMessageHandler(messageService, schedulerService, messageSender, logger, redisClient)
 	logger.Log("Setting up the router...")
 	router := gin.Default()
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -85,6 +85,7 @@ func main() {
 	router.POST("/api/scheduler/start", messageHandler.StartScheduler)
 	router.POST("/api/scheduler/stop", messageHandler.StopScheduler)
 	router.GET("/api/messages/sent", messageHandler.GetSentMessages)
+	router.POST("/cache/clear", messageHandler.ClearMessageCache)
 
 	logger.Log("Starting the server...")
 	err = router.Run(fmt.Sprintf(":%d", appConfig.Server.Port))

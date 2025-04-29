@@ -13,6 +13,8 @@ type MessageService interface {
 	GetUnsentMessages(ctx context.Context, limit int) ([]model.Message, error)
 	UpdateMessageSent(ctx context.Context, id uint) error
 	GetSentMessages(ctx context.Context) ([]model.Message, error)
+	GetMessage(ctx context.Context, id uint) (model.Message, error)
+	CreateMessage(ctx context.Context, message model.Message) error
 }
 
 type message struct {
@@ -146,4 +148,67 @@ func (r *message) GetSentMessages(ctx context.Context) ([]model.Message, error) 
 	}
 
 	return messages, nil
+}
+
+func (r *message) GetMessage(ctx context.Context, id uint) (model.Message, error) {
+	var msg model.Message
+	var sentAt, createdAt, updatedAt *time.Time
+
+	query := `
+        SELECT id, content, recipient_phone, sent, sent_at, created_at, updated_at 
+        FROM messages 
+        WHERE id = $1
+    `
+
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&msg.ID,
+		&msg.Content,
+		&msg.RecipientPhone,
+		&msg.Sent,
+		&sentAt,
+		&createdAt,
+		&updatedAt,
+	)
+
+	if err != nil {
+		return model.Message{}, err
+	}
+
+	if sentAt != nil {
+		msg.SentAt = *sentAt
+	}
+	if createdAt != nil {
+		msg.CreatedAt = *createdAt
+	}
+	if updatedAt != nil {
+		msg.UpdatedAt = *updatedAt
+	}
+
+	return msg, nil
+}
+
+func (r *message) CreateMessage(ctx context.Context, message model.Message) error {
+	query := `
+        INSERT INTO messages (id, content, recipient_phone, sent, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+    `
+
+	_, err := r.pool.Exec(
+		ctx,
+		query,
+		message.ID,
+		message.Content,
+		message.RecipientPhone,
+		message.Sent,
+		message.CreatedAt,
+		message.UpdatedAt,
+	)
+
+	if err != nil {
+		r.logger.Errorf("Failed to create message with ID %d: %v", message.ID, err)
+		return err
+	}
+
+	r.logger.Logf("Message with ID %d created successfully", message.ID)
+	return nil
 }
